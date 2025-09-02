@@ -1,19 +1,25 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Google — поисковик</title>
+  <title>Токарна справа — 1 курс</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
     :root{
-      --bg:#0b0b10;
+      --bg:#090a0f;
+      --panel:#120c1f;
       --neon:#9b4dff;
       --neon-2:#b56bff;
-      --text:#ece7ff;
+      --cyan:#5ee0ff;
+      --text:#efe9ff;
       --muted:#a79ac5;
+      --border:rgba(155,77,255,.36);
+      --soft:rgba(155,77,255,.08);
+      --ok:#16d19a;
+      --warn:#ffc96b;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -21,303 +27,851 @@
       margin:0;
       font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       color:var(--text);
+      background:var(--bg);
+      overflow-x:hidden;
+    }
+
+    /* Слои фона: звёзды + млечный путь + мягкие подсветки */
+    .stars, .milky, .glow, .noise{position:fixed; inset:0; pointer-events:none}
+    .stars{z-index:0}
+    .milky{
+      z-index:1; opacity:.25; mix-blend-mode:screen;
       background:
-        radial-gradient(1200px 600px at 18% 24%, rgba(155,77,255,.13), transparent 60%),
-        radial-gradient(900px 500px at 80% 72%, rgba(155,77,255,.10), transparent 60%),
-        var(--bg);
-      display:grid; place-items:center; overflow:hidden;
+        radial-gradient(1200px 700px at 15% 25%, rgba(155,77,255,.16), transparent 60%),
+        radial-gradient(1000px 600px at 85% 72%, rgba(94,224,255,.12), transparent 60%),
+        radial-gradient(60% 16% at 60% 70%, rgba(220,210,255,.18), transparent 70%);
+      filter:blur(32px);
+      animation:drift 26s ease-in-out infinite alternate;
     }
-
-    /* Слои фона */
+    @keyframes drift{ from{ transform:rotate(-4deg) translateY(-10px) } to{ transform:rotate(3deg) translateY(6px) } }
     .glow{
-      position:fixed; width:65vmin; height:65vmin; border-radius:50%;
-      background:radial-gradient(circle, rgba(155,77,255,.6) 0%, rgba(155,77,255,.28) 40%, transparent 70%);
-      filter:blur(52px); z-index:0; animation:float 9s ease-in-out infinite alternate;
-      pointer-events:none;
+      z-index:2; opacity:.65;
+      background:
+        radial-gradient(circle at 18% 28%, rgba(155,77,255,.30) 0%, transparent 55%),
+        radial-gradient(circle at 80% 70%, rgba(94,224,255,.20) 0%, transparent 55%);
+      filter:blur(44px);
     }
-    .glow.g2{ width:48vmin; height:48vmin; opacity:.7; animation-duration:12s }
-    @keyframes float{ from{ transform:translate(-18vw,-10vh) } to{ transform:translate(16vw,12vh) } }
-
-    .noise{
-      position:fixed; inset:0; pointer-events:none; opacity:.06; mix-blend-mode:soft-light; z-index:1;
+    .noise{ z-index:3; opacity:.05; mix-blend-mode:soft-light;
       background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.5"/></svg>');
     }
 
-    /* Неоновая сетка по бокам */
-    .bg-net{
-      position:fixed; inset:0; pointer-events:none; z-index:2;
-      mix-blend-mode:screen; opacity:.9;
-    }
+    .wrap{ position:relative; z-index:4; width:min(1100px,96vw); margin:0 auto; padding:18px 0 60px }
 
-    .wrap{ position:relative; z-index:3; width:min(920px,94vw); text-align:center }
-    .title{
-      font-weight:800; font-size:clamp(28px,4vw,56px); margin:0 0 20px;
+    header{ text-align:center; margin-bottom:10px }
+    .brand{
+      margin:0 0 2px; font-weight:800; font-size:clamp(20px,3.2vw,28px);
       background:linear-gradient(90deg,#efe8ff,#caa9ff,#ffffff);
       -webkit-background-clip:text; background-clip:text; color:transparent;
-      text-shadow:0 0 18px rgba(155,77,255,.45);
+      text-shadow:0 0 16px rgba(155,77,255,.42);
     }
-    .subtitle{ margin:0 0 22px; color:var(--muted) }
+    .tagline{ margin:0; color:var(--muted); font-size:13px }
 
-    /* Минималистичная строка с тонкой неоновой обводкой */
-    .bar{
-      width:min(880px,92vw);
-      margin:0 auto;
-      display:grid;
-      grid-template-columns:auto 1fr auto;
-      align-items:center; gap:12px;
-      padding:12px 14px;
-      border-radius:999px;
-      border:1px solid rgba(155,77,255,.55);
-      background:rgba(24,14,45,.06); /* почти прозрачная подложка */
-      -webkit-backdrop-filter:blur(8px) saturate(120%);
-      backdrop-filter:blur(8px) saturate(120%);
-      box-shadow:
-        0 0 0 2px rgba(155,77,255,.10) inset,
-        0 0 44px rgba(155,77,255,.35);
-      transition:border-color .2s ease, box-shadow .25s ease, transform .2s ease;
+    /* Время + «интересная» дата */
+    .clock{ margin:10px auto 10px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .clock time{
+      font-variant-numeric:tabular-nums; font-weight:800; font-size:clamp(30px,7.6vw,64px);
+      line-height:1; color:#fff; text-shadow:0 0 22px rgba(155,77,255,.6), 0 0 42px rgba(155,77,255,.35)
     }
-    .bar:hover{
-      border-color:rgba(181,107,255,.85);
-      box-shadow:
-        0 0 0 2px rgba(181,107,255,.18) inset,
-        0 0 60px rgba(155,77,255,.55);
+    .datebar{
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;
+      color:#e6dcff;
     }
-    .bar:focus-within{
-      transform:translateY(-1px);
-      border-color:#c08bff;
-      box-shadow:
-        0 0 0 2px rgba(192,139,255,.22) inset,
-        0 0 68px rgba(155,77,255,.7);
+    .dow{
+      font-weight:800; letter-spacing:.3px;
+      background:linear-gradient(135deg, rgba(155,77,255,.32), rgba(94,224,255,.24));
+      border:1px solid var(--border);
+      padding:6px 10px; border-radius:999px; text-transform:capitalize;
+      box-shadow:0 0 14px rgba(155,77,255,.25) inset, 0 0 10px rgba(94,224,255,.22);
     }
-    .icon{
-      width:22px; height:22px; color:#d2b6ff;
-      filter:drop-shadow(0 0 6px rgba(155,77,255,.7));
-      margin-left:2px;
+    .cal{
+      display:inline-flex; align-items:baseline; gap:6px;
+      background:linear-gradient(135deg, rgba(155,77,255,.22), rgba(94,224,255,.16));
+      border:1px solid var(--border); padding:6px 10px; border-radius:10px;
+      box-shadow:0 0 12px rgba(155,77,255,.22) inset, 0 0 18px rgba(155,77,255,.20);
+      font-variant-numeric:tabular-nums;
     }
-    .q{
-      min-width:0; width:100%;
-      background:transparent; border:none; outline:none;
-      color:var(--text); font-size:clamp(16px,2.6vw,20px); padding:8px 6px;
-      caret-color:var(--neon);
-    }
-    .q::placeholder{ color:#b49be6; opacity:.6 }
+    .cal .dd, .cal .mm{ font-weight:800; font-size:clamp(16px,4.2vw,22px); color:#fff }
+    .cal .slash{ opacity:.8 }
+    .year{ opacity:.9 }
 
-    .btn{
-      border:none; border-radius:999px; padding:12px 18px;
-      color:#fff; font-weight:600; letter-spacing:.2px; cursor:pointer;
-      background:linear-gradient(135deg,#8f4bff 0%,#b56bff 40%,#8f4bff 100%);
-      box-shadow:0 0 16px rgba(155,77,255,.55), 0 0 8px rgba(155,77,255,.5) inset;
-      transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    /* Карточки */
+    .card{
+      position:relative;
+      background:linear-gradient(180deg, rgba(24,14,45,.22), rgba(24,14,45,.08));
+      border:1px solid var(--border); border-radius:14px; padding:12px;
+      -webkit-backdrop-filter:blur(10px) saturate(140%); backdrop-filter:blur(10px) saturate(140%);
+      box-shadow:0 0 0 1px rgba(155,77,255,.10) inset, 0 10px 24px rgba(0,0,0,.34), 0 0 30px rgba(155,77,255,.20);
+      overflow:hidden;
     }
-    .btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 0 26px rgba(155,77,255,.9); filter:saturate(1.08) }
-    .btn:active{ transform:translateY(0) scale(.98) }
+    .card h2{ margin:0 0 10px; font-size:clamp(16px,2.2vw,20px); font-weight:800 }
+    .muted{ color:var(--muted) }
+    .chip{
+      display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#fff; padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(155,77,255,.5);
+      background:linear-gradient(135deg, rgba(155,77,255,.25), rgba(181,107,255,.18));
+      box-shadow:0 0 16px rgba(155,77,255,.35) inset, 0 0 16px rgba(155,77,255,.25);
+      white-space:nowrap;
+    }
 
-    /* Единственный контрол — открывать в новой вкладке */
-    .controls{
-      margin:14px auto 0;
-      display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; justify-content:center;
-      color:var(--muted); font-size:14px; user-select:none;
+    /* NOW CARD */
+    .now-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; align-items:center }
+    .now-line{ display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+      background:rgba(155,77,255,.14); border:1px solid rgba(155,77,255,.45); color:#fff; font-weight:700; font-size:13px;
+      box-shadow:inset 0 0 10px rgba(155,77,255,.25);
+      white-space:nowrap;
     }
-    .switch{
-      display:inline-flex; gap:8px; align-items:center;
-      padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(155,77,255,.3); background:rgba(0,0,0,.22);
+    .pill.ok{ border-color:rgba(22,209,154,.5); background:rgba(22,209,154,.14) }
+    .pill.warn{ border-color:rgba(255,201,107,.55); background:rgba(255,201,107,.16) }
+    .prog{
+      grid-column:1 / -1;
+      height:8px; border-radius:999px; background:rgba(155,77,255,.16); overflow:hidden; border:1px solid rgba(155,77,255,.35);
+      box-shadow:inset 0 0 10px rgba(155,77,255,.18);
     }
-    .switch input{
-      appearance:none; width:34px; height:20px; border-radius:20px; background:#2a2140; position:relative; outline:none; cursor:pointer;
-      box-shadow:inset 0 0 8px rgba(155,77,255,.35);
-    }
-    .switch input::after{
-      content:""; position:absolute; width:16px; height:16px; border-radius:50%; top:2px; left:2px; background:#cda7ff;
-      box-shadow:0 0 10px rgba(155,77,255,.8); transition:transform .2s ease;
-    }
-    .switch input:checked{ background:#8f4bff }
-    .switch input:checked::after{ transform:translateX(14px) }
+    .prog .bar{ height:100%; width:0%; background:linear-gradient(90deg, var(--neon), var(--cyan)); box-shadow:0 0 10px rgba(155,77,255,.7) }
+    .next{ grid-column:1 / -1; font-size:13px; color:#dacfff }
+    @media (max-width:820px){ .now-grid{ grid-template-columns:1fr } }
 
-    footer{ margin-top:16px; font-size:12px; color:#8f84a8 }
+    /* Панель навигации по дням */
+    .toolbar{
+      display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;
+      position:sticky; top:8px; z-index:6;
+      background:linear-gradient(180deg, rgba(24,14,45,.80), rgba(24,14,45,.50));
+      border:1px solid var(--border); border-radius:12px; padding:8px 10px;
+      -webkit-backdrop-filter:blur(8px) saturate(130%); backdrop-filter:blur(8px) saturate(130%);
+      box-shadow:0 0 18px rgba(155,77,255,.25);
+    }
+    .left,.right{ display:flex; align-items:center; gap:8px }
+    .navbtn, .iconbtn{
+      display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px;
+      border-radius:10px; background:rgba(155,77,255,.14); border:1px solid rgba(155,77,255,.45);
+      color:#fff; cursor:pointer;
+      box-shadow:0 0 10px rgba(155,77,255,.35) inset, 0 0 14px rgba(155,77,255,.25);
+      transition:transform .12s ease, filter .2s ease, background .2s ease;
+    }
+    .navbtn:hover,.iconbtn:hover{ transform:translateY(-1px); filter:saturate(1.05) }
+    .title-day{ display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px; min-width:0 }
+    .title-day .dot{
+      width:8px; height:8px; border-radius:50%; flex:0 0 auto;
+      background:linear-gradient(135deg,var(--neon),var(--cyan));
+      box-shadow:0 0 8px rgba(155,77,255,.9), 0 0 10px rgba(94,224,255,.6);
+    }
 
+    /* Сетка: расписание + перерывы */
+    .week-layout{ display:grid; grid-template-columns:1.5fr .9fr; gap:12px }
+    @media (max-width:980px){ .week-layout{ grid-template-columns:1fr } }
+
+    /* Таблица расписания (адаптивная) */
+    .table-wrap{ overflow:auto; width:100% }
+    table.schedule{
+      width:100%; border-collapse:separate; border-spacing:0;
+      background:linear-gradient(180deg, rgba(24,14,45,.18), rgba(24,14,45,.06));
+      border:1px solid var(--border); border-radius:12px; overflow:hidden;
+      -webkit-backdrop-filter:blur(8px) saturate(130%); backdrop-filter:blur(8px) saturate(130%);
+    }
+    .schedule thead th{
+      padding:10px 12px; text-align:left; color:#f3ecff; font-weight:800; font-size:13px; letter-spacing:.3px;
+      background:linear-gradient(180deg, rgba(155,77,255,.18), rgba(155,77,255,.06));
+      border-bottom:1px solid rgba(155,77,255,.18);
+    }
+    .schedule td{
+      padding:9px 12px; border-bottom:1px solid rgba(155,77,255,.14);
+      word-break:break-word; hyphens:auto;
+    }
+    .schedule tbody tr:last-child td{ border-bottom:none }
+    .time{ font-variant-numeric:tabular-nums; font-weight:700; color:#fff; white-space:nowrap }
+    .subject{ min-width:200px }
+    .room,.teacher{ color:#e7dbff; white-space:nowrap }
+
+    /* Режим редактирования */
+    .editable[contenteditable="true"]{
+      outline:1px dashed rgba(181,107,255,.8);
+      background:rgba(155,77,255,.10);
+      border-radius:6px;
+    }
+    .editable:focus{ box-shadow:0 0 0 2px rgba(181,107,255,.35) }
+
+    /* Мобильная карточка строки */
+    @media (max-width:680px){
+      table.schedule{ display:block }
+      table.schedule thead{ display:none }
+      table.schedule tbody{ display:flex; flex-direction:column; gap:10px; padding:10px }
+      table.schedule tr{
+        display:grid; grid-template-columns:1fr; gap:6px;
+        border:1px solid rgba(155,77,255,.3);
+        background:linear-gradient(180deg, rgba(155,77,255,.08), rgba(155,77,255,.03));
+        border-radius:10px; padding:10px;
+      }
+      table.schedule td{ border:none; padding:2px 0 }
+      table.schedule td::before{
+        content:attr(data-label);
+        display:inline-block; min-width:110px; color:#cdbfff; font-size:12px; margin-right:8px;
+      }
+      .subject{ min-width:auto }
+    }
+
+    /* Таблица перерывов: 1) время */
+    table.breaks{
+      width:100%; border-collapse:separate; border-spacing:0;
+      background:linear-gradient(180deg, rgba(24,14,45,.18), rgba(24,14,45,.06));
+      border:1px solid var(--border); border-radius:12px; overflow:hidden;
+      -webkit-backdrop-filter:blur(8px) saturate(130%); backdrop-filter:blur(8px) saturate(130%);
+    }
+    .breaks th, .breaks td{ padding:9px 10px; border-bottom:1px solid rgba(155,77,255,.16) }
+    .breaks thead th{
+      color:#f3ecff; font-weight:800; font-size:13px; letter-spacing:.3px;
+      background:linear-gradient(180deg, rgba(155,77,255,.18), rgba(155,77,255,.06));
+    }
+    .breaks tbody tr:last-child td{ border-bottom:none }
+    .big{ color:#ffe6b3 }
+
+    /* Компактные учебные блоки */
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px }
+    @media (max-width:980px){ .grid{ grid-template-columns:1fr } }
+    .term{
+      border:1px dashed rgba(155,77,255,.35);
+      border-radius:12px; padding:10px 12px;
+      background:linear-gradient(180deg, rgba(155,77,255,.10), rgba(155,77,255,.04));
+    }
+    .term b{ color:#f8f3ff }
+    ul.clean{ margin:6px 0 0 18px; padding:0 }
+    ul.clean li{ margin:6px 0 }
+    .formula{
+      margin-top:6px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      background:rgba(107,57,201,.22); border:1px solid rgba(155,77,255,.4);
+      padding:7px 9px; border-radius:10px; color:#ffffff; font-size:13px;
+      text-shadow:0 0 10px rgba(155,77,255,.45);
+    }
+
+    /* Микро-тюн для мобил */
     @media (max-width:560px){
-      .btn{ width:auto }
-      .bar{ gap:10px; padding:10px 12px }
-      .q{ padding:10px 2px }
-      .controls{ gap:8px 10px }
+      .card{ padding:10px }
+      .toolbar{ top:6px; padding:6px 8px }
+      .navbtn,.iconbtn{ width:34px; height:34px; border-radius:9px }
+      .title-day{ font-size:14px }
+      .dow{ padding:5px 9px }
+      .cal{ padding:5px 9px }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .milky{ animation:none }
     }
   </style>
 </head>
 <body>
-  <!-- Мягкие неоновые пятна -->
-  <div class="glow" style="top:15vh; left:15vw;"></div>
-  <div class="glow g2" style="bottom:10vh; right:18vw;"></div>
-  <div class="noise"></div>
-
-  <!-- Сетка/частицы по бокам -->
-  <canvas id="bgNet" class="bg-net"></canvas>
+  <!-- Фон -->
+  <canvas id="stars" class="stars" aria-hidden="true"></canvas>
+  <div class="milky" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="noise" aria-hidden="true"></div>
 
   <main class="wrap">
-    <h1 class="title">Google</h1>
-    <p class="subtitle">style.</p>
+    <header>
+      <h1 class="brand">Токарна справа — 1 курс</h1>
+      <p class="tagline">style.</p>
+      <div class="clock" aria-live="polite">
+        <time id="clock">--:--:--</time>
+        <div class="datebar">
+          <span class="dow" id="dow">понеділок</span>
+          <span class="cal">
+            <span class="dd" id="dd">--</span>
+            <span class="slash">/</span>
+            <span class="mm" id="mm">--</span>
+          </span>
+          <span class="year" id="yyyy">----</span>
+        </div>
+      </div>
+    </header>
 
-    <!-- Форма уходит прямо в Google -->
-    <form id="searchForm" class="bar" action="https://www.google.com/search" method="get" autocomplete="off">
-      <!-- язык результата -->
-      <input type="hidden" name="hl" value="ru" />
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"></circle>
-        <line x1="16.65" y1="16.65" x2="22" y2="22"></line>
-      </svg>
-      <input id="q" class="q" name="q" type="text" placeholder="Искать..." autofocus />
-      <button class="btn" type="submit">Найти</button>
-    </form>
+    <!-- СТАТУС СЕЙЧАС -->
+    <section class="card" id="nowCard">
+      <h2>Зараз</h2>
+      <div class="now-grid">
+        <div class="now-line">
+          <span class="pill" id="nowType">—</span>
+          <span class="pill" id="nowSubject">—</span>
+          <span class="pill" id="nowTime">--:--–--:--</span>
+        </div>
+        <div class="now-line">
+          <span class="pill" id="nowRoom">Кабінет: —</span>
+          <span class="pill" id="nowTeacher">Викладач: —</span>
+        </div>
+        <div class="now-line">
+          <span class="pill ok" id="elapsed">Йде: 0 хв</span>
+          <span class="pill warn" id="left">Залишилось: 0 хв</span>
+        </div>
+        <div class="prog"><div class="bar" id="nowBar"></div></div>
+        <div class="next" id="nextInfo">Далі: —</div>
+      </div>
+    </section>
 
-    <div class="controls">
-      <label class="switch" title="Открывать результаты в новой вкладке">
-        <input type="checkbox" id="newtab" checked />
-        Открывать в новой вкладке
-      </label>
-    </div>
+    <!-- РОЗКЛАД + ПЕРЕРВИ -->
+    <section class="card" style="margin-top:10px">
+      <div class="toolbar" id="toolbar">
+        <div class="left">
+          <button class="navbtn" id="prev" aria-label="Попередній день">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        </div>
+        <div class="title-day">
+          <span class="dot"></span>
+          <span id="dayTitle">Понеділок</span>
+        </div>
+        <div class="right">
+          <button class="navbtn" id="next" aria-label="Наступний день">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="iconbtn" id="editToggle" title="Режим редагування">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5l4 4L7 21H3v-4z"/></svg>
+          </button>
+          <button class="iconbtn" id="resetBtn" title="Скинути до зразка">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-7"/><path d="M3 3v6h6"/></svg>
+          </button>
+        </div>
+      </div>
 
-    <footer>Ctrl/Cmd + K — фокус на строку. Приятного поиска!</footer>
+      <div class="week-layout" id="swipeZone">
+        <!-- LEFT: расписание выбранного дня -->
+        <div class="table-wrap">
+          <table class="schedule" aria-label="Розклад дня">
+            <thead>
+              <tr>
+                <th>Час</th>
+                <th>Назва уроку</th>
+                <th>Кабінет</th>
+                <th>Викладач</th>
+              </tr>
+            </thead>
+            <tbody id="dayBody"></tbody>
+          </table>
+          <div class="hint" id="editHint" style="display:none; margin-top:8px">
+            Режим редагування: торкніться «Назва/Кабінет/Викладач», зміни збережуться автоматично.
+          </div>
+        </div>
+
+        <!-- RIGHT: перерывы 1) время -->
+        <aside>
+          <div class="table-wrap">
+            <table class="breaks" aria-label="Перерви">
+              <thead>
+                <tr>
+                  <th>№</th>
+                  <th>Час</th>
+                  <th>Примітка</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1)</td><td>08:45–08:55</td><td>—</td></tr>
+                <tr><td>2)</td><td>09:40–09:50</td><td>—</td></tr>
+                <tr><td>3)</td><td>10:35–10:45</td><td>—</td></tr>
+                <tr><td>4)</td><td>11:30–11:50</td><td class="big">Велика перерва</td></tr>
+                <tr><td>5)</td><td>12:35–12:45</td><td>—</td></tr>
+                <tr><td>6)</td><td>13:30–13:40</td><td>—</td></tr>
+                <tr><td>7)</td><td>14:25–14:35</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted" style="margin-top:8px">Час дзвінків однаковий для всіх днів.</p>
+        </aside>
+      </div>
+
+      <p class="muted" style="margin-top:8px">Свайп вліво/вправо або клавіші ← → — перемикання днів.</p>
+    </section>
+
+    <!-- Компактні навчальні блоки -->
+    <section class="card" style="margin-top:12px">
+      <h2>Позначення моделі 1К62</h2>
+      <div class="grid">
+        <div class="term">
+          <ul class="clean">
+            <li><b>1</b> — верстат токарної групи.</li>
+            <li><b>К</b> — модернізація (оновлена серія).</li>
+            <li><b>6</b> — підгрупа токарного верстата (конструктивна серія).</li>
+            <li><b>2</b> — розмір: 200 мм — найбільший діаметр заготовки, який можна встановити.</li>
+          </ul>
+          <p class="muted">Параметри звіряйте за паспортом конкретної модифікації.</p>
+        </div>
+        <div class="term">
+          <b>Цілі та операції</b>
+          <p><b>Точіння</b> — головний рух обертання виконує заготовка, різець робить подачу; зняття шару металу для форми/розміру.</p>
+          <ul class="clean">
+            <li>Зовнішнє точіння, підрізання торців</li>
+            <li>Свердління, розсвердлювання, <b>розточування</b></li>
+            <li>Нарізання різьби (різцем, мітчиком, плашкою)</li>
+            <li>Відрізання, канавки</li>
+            <li>Конусні та фасонні поверхні</li>
+            <li><b>Накатування рифлень</b></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+      <h2>Класифікації (коротко)</h2>
+      <div class="grid">
+        <div class="term">
+          <b>Ступені універсальності</b>
+          <ul class="clean">
+            <li><b>Універсальні</b> — широкий спектр операцій.</li>
+            <li><b>Спеціалізовані</b> — для групи подібних деталей/операцій.</li>
+            <li><b>Спеціальні</b> — під одну конкретну операцію/деталь.</li>
+          </ul>
+        </div>
+        <div class="term">
+          <b>Класи точності (букви)</b>
+          <ul class="clean">
+            <li><b>н</b> — нормальна</li>
+            <li><b>п</b> — підвищена</li>
+            <li><b>в</b> — висока</li>
+            <li><b>а</b> — надвисока</li>
+            <li><b>с</b> — надточні (майстер‑верстати)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+      <h2>Лінії креслення (приклади)</h2>
+      <div class="grid">
+        <div class="term">
+          <b>Типи ліній</b>
+          <ul class="clean">
+            <li>Суцільна товста — видимі контури (s ≈ 0,5–0,8 мм)</li>
+            <li>Суцільна тонка — розмірні, виносні (s ≈ 0,2–0,4 мм)</li>
+            <li>Штрихова — невидимі контури</li>
+            <li>Штрих‑пунктирна тонка — осьові</li>
+            <li>Штрих‑пунктирна потовщена — виділення поверхонь</li>
+            <li>Лінія обриву — хвиляста (вільноруч)</li>
+          </ul>
+          <div class="formula">Співвідношення товстої й тонкої ≈ 2:1; на кресленні використовують 2–3 товщини.</div>
+        </div>
+        <div class="term">
+          <b>Візуальні зразки</b>
+          <div style="display:grid; grid-template-columns:1.1fr auto; gap:8px 12px; align-items:center">
+            <span>Суцільна товста</span>
+            <svg viewBox="0 0 220 16" style="width:220px;height:16px"><line x1="6" y1="8" x2="214" y2="8" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>
+            <span>Суцільна тонка</span>
+            <svg viewBox="0 0 220 16" style="width:220px;height:16px"><line x1="6" y1="8" x2="214" y2="8" stroke="#dacfff" stroke-width="1.5"/></svg>
+            <span>Штрихова</span>
+            <svg viewBox="0 0 220 16" style="width:220px;height:16px"><line x1="6" y1="8" x2="214" y2="8" stroke="#e9dcff" stroke-width="2" stroke-dasharray="10 6"/></svg>
+            <span>Штрих‑пунктирна тонка</span>
+            <svg viewBox="0 0 220 16" style="width:220px;height:16px"><line x1="6" y1="8" x2="214" y2="8" stroke="#cbb6ff" stroke-width="1.5" stroke-dasharray="14 6 2 6"/></svg>
+            <span>Штрих‑пунктирна потовщена</span>
+            <svg viewBox="0 0 220 16" style="width:220px;height:16px"><line x1="6" y1="8" x2="214" y2="8" stroke="#ffffff" stroke-width="3" stroke-dasharray="16 6 2 6"/></svg>
+            <span>Лінія обриву</span>
+            <svg viewBox="0 0 220 16" style="width:220px;height:16px" fill="none"><path d="M5 8 C 25 1, 45 15, 65 8 S 105 1, 125 8 S 165 15, 185 8 S 205 1, 215 8" stroke="#ffd9a6" stroke-width="2"/></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+      <h2>Розміри, допуски і приклади</h2>
+      <div class="grid">
+        <div class="term">
+          <b>Види розмірів</b>
+          <ul class="clean">
+            <li><b>Номінальний</b> — базовий, вказаний на кресленні.</li>
+            <li><b>Дійсний</b> — отриманий при вимірюванні деталі.</li>
+            <li><b>Граничні</b> — Dmax та Dmin, що обмежують дійсний.</li>
+            <li><b>Відхилення</b> — верхнє Δ+ і нижнє Δ− від номіналу.</li>
+            <li><b>Допуск T</b> — поле допуску: Dmax − Dmin.</li>
+          </ul>
+          <div class="formula">Приклад: ⌀30<sup>+0,1</sup><sub>−0,2</sub> → Dmax=30,1; Dmin=29,8; T=0,3 мм. За межами — брак.</div>
+        </div>
+        <div class="term">
+          <b>Складання розмірів (ланцюг)</b>
+          <div class="formula">
+            L = A + B + C<br>
+            Cmax = Lmax − Amin − Bmin<br>
+            Cmin = Lmin − Amax − Bmax<br>
+            Tc = Cmax − Cmin
+          </div>
+          <b>Масштаб</b>
+          <div class="formula">1:2 → 80 мм у натурі = 40 мм на кресленні; 2:1 → 25 мм у натурі = 50 мм на кресленні.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer style="text-align:center; color:#8f84a8; font-size:12px; margin-top:14px">
+      Статична сторінка. Розклад можна налаштувати в режимі редагування (зберігається локально). Перемикай дні стрілками/свайпом.
+    </footer>
   </main>
 
   <script>
-    // Работа формы: стандартный GET в Google. Меняем только target.
-    const form  = document.getElementById('searchForm');
-    const input = document.getElementById('q');
-    const newTab = document.getElementById('newtab');
+    // ==== ЧАС і «интересная» ДАТА ====
+    const clockEl = document.getElementById('clock');
+    const ddEl = document.getElementById('dd');
+    const mmEl = document.getElementById('mm');
+    const yyyyEl = document.getElementById('yyyy');
+    const dowEl = document.getElementById('dow');
+    const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+    const dows = ['неділя','понеділок','вівторок','середа','четвер','п’ятниця','субота'];
+    const pad2 = n => String(n).padStart(2,'0');
 
-    form.addEventListener('submit', (e) => {
-      if (!input.value.trim()) { // не отправляем пустой запрос
-        e.preventDefault();
-        input.focus();
-        return;
+    function updateClock(){
+      const now = new Date();
+      clockEl.textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+      ddEl.textContent = pad2(now.getDate());
+      mmEl.textContent = months[now.getMonth()];
+      yyyyEl.textContent = now.getFullYear();
+      dowEl.textContent = dows[now.getDay()];
+    }
+    updateClock(); setInterval(updateClock, 1000);
+
+    // ==== ДАНІ РОЗКЛАДУ ====
+    const times = [
+      '08:00–08:45','08:55–09:40','09:50–10:35','10:45–11:30',
+      '11:50–12:35','12:45–13:30','13:40–14:25','14:35–15:20'
+    ];
+    const weekDays = [
+      {key:'mon', name:'Понеділок'},
+      {key:'tue', name:'Вівторок'},
+      {key:'wed', name:'Середа'},
+      {key:'thu', name:'Четвер'},
+      {key:'fri', name:'П’ятниця'}
+    ];
+
+    function templateWeek(){
+      return {
+        mon: [
+          {s:'Єдиний урок', r:'5', t:'Обертас К.П.'},
+          {s:'Електротехніка з основами промислової електроніки', r:'20', t:'Гавріков Ю.Ю.'},
+          {s:'Охорона праці', r:'14', t:'Гряннік Л.І.'},
+          {s:'Охорона праці', r:'14', t:'Гряннік Л.І.'},
+          {s:'Спецтехнологія', r:'5', t:'Обертас К.П.'},
+          {s:'Спецтехнологія', r:'5', t:'Обертас К.П.'},
+          {s:'—', r:'—', t:'—'},
+          {s:'—', r:'—', t:'—'}
+        ],
+        tue: [
+          {s:'Читання креслень', r:'—', t:'Іванов І.І.'},
+          {s:'Допуски та технічні вимірювання', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Інформаційні технології', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Фізична культура', r:'—', t:'Іванов І.І.'},
+          {s:'—', r:'—', t:'Іванов І.І.'}
+        ],
+        wed: [
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Електротехніка з основами промислової електроніки', r:'—', t:'Іванов І.І.'},
+          {s:'Основи правових знань', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Допуски та технічні вимірювання', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Матеріалознавство', r:'—', t:'Іванов І.І.'}
+        ],
+        thu: [
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Основи галузевої економіки і підприємництва', r:'—', t:'Іванов І.І.'},
+          {s:'Інформаційні технології', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Фізична культура', r:'—', t:'Іванов І.І.'},
+          {s:'Проєктування, виготовлення і використання заготовок', r:'—', t:'Іванов І.І.'},
+          {s:'—', r:'—', t:'Іванов І.І.'}
+        ],
+        fri: [
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Допуски та технічні вимірювання', r:'—', t:'Іванов І.І.'},
+          {s:'Читання креслень', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'Фізична культура', r:'—', t:'Іванов І.І.'},
+          {s:'Спецтехнологія', r:'—', t:'Іванов І.І.'},
+          {s:'—', r:'—', t:'Іванов І.І.'}
+        ]
       }
-      form.target = newTab.checked ? '_blank' : '_self';
-      // дальше браузер сам отправит форму на https://www.google.com/search?q=...
+    }
+
+    const STORAGE_KEY = 'latheWeek_v3';
+    function loadWeek(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return templateWeek();
+        const obj = JSON.parse(raw);
+        return obj || templateWeek();
+      }catch(e){ return templateWeek() }
+    }
+    function saveWeek(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(week)); }
+
+    let week = loadWeek();
+
+    // ==== РЕНДЕР ДНЯ ====
+    const dayTitle = document.getElementById('dayTitle');
+    const tbody = document.getElementById('dayBody');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const editToggle = document.getElementById('editToggle');
+    const editHint = document.getElementById('editHint');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function getInitialIndex(){
+      const stored = Number(localStorage.getItem('dayIdx'));
+      if(Number.isInteger(stored) && stored>=0 && stored<weekDays.length) return stored;
+      const d = new Date().getDay(); // 0..6
+      return (d>=1 && d<=5) ? d-1 : 0;
+    }
+    let dayIdx = getInitialIndex();
+    let editMode = false;
+
+    function renderDay(){
+      const day = weekDays[dayIdx];
+      dayTitle.textContent = day.name;
+      tbody.innerHTML = '';
+      const arr = week[day.key] || [];
+      for(let i=0;i<times.length;i++){
+        const row = arr[i] || {s:'—', r:'—', t:'Іванов І.І.'};
+
+        const tr = document.createElement('tr');
+
+        const tdTime = document.createElement('td');
+        tdTime.className = 'time';
+        tdTime.textContent = times[i];
+        tdTime.setAttribute('data-label','Час:');
+
+        const tdSubj = document.createElement('td');
+        tdSubj.className = 'subject editable';
+        tdSubj.textContent = row.s;
+        tdSubj.setAttribute('data-label','Назва:');
+        tdSubj.dataset.field = 's';
+
+        const tdRoom = document.createElement('td');
+        tdRoom.className = 'room editable';
+        tdRoom.textContent = row.r;
+        tdRoom.setAttribute('data-label','Кабінет:');
+        tdRoom.dataset.field = 'r';
+
+        const tdTeach = document.createElement('td');
+        tdTeach.className = 'teacher editable';
+        tdTeach.textContent = row.t;
+        tdTeach.setAttribute('data-label','Викладач:');
+        tdTeach.dataset.field = 't';
+
+        // индексы для сохранения
+        [tdSubj, tdRoom, tdTeach].forEach(td=>{
+          td.dataset.day = day.key;
+          td.dataset.idx = String(i);
+          td.contentEditable = editMode ? 'true' : 'false';
+        });
+
+        tr.append(tdTime, tdSubj, tdRoom, tdTeach);
+        tbody.appendChild(tr);
+      }
+      editHint.style.display = editMode ? '' : 'none';
+      localStorage.setItem('dayIdx', String(dayIdx));
+      updateNow(); // обновить карточку "Зараз"
+    }
+
+    function toggleEdit(){
+      editMode = !editMode;
+      editToggle.setAttribute('aria-pressed', String(editMode));
+      renderDay();
+    }
+
+    prevBtn.addEventListener('click', ()=>{ dayIdx = (dayIdx-1+weekDays.length)%weekDays.length; renderDay(); });
+    nextBtn.addEventListener('click', ()=>{ dayIdx = (dayIdx+1)%weekDays.length; renderDay(); });
+    editToggle.addEventListener('click', toggleEdit);
+
+    resetBtn.addEventListener('click', ()=>{
+      if(confirm('Скинути розклад до зразка?')){
+        week = templateWeek();
+        saveWeek();
+        renderDay();
+      }
     });
 
-    // Ctrl/Cmd + K — фокус на строку
-    window.addEventListener('keydown', (e)=>{
-      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){
-        e.preventDefault(); input.focus();
+    // Сохранение при редактировании
+    tbody.addEventListener('keydown', (e)=>{
+      const t = e.target;
+      if(t.matches('.editable[contenteditable="true"]') && e.key === 'Enter'){
+        e.preventDefault(); t.blur();
       }
-    });
+    }, true);
 
-    // Неоновая сетка/частицы по бокам (мягкая, не отвлекает)
-    (function NeonNet(){
-      const canvas = document.getElementById('bgNet');
+    tbody.addEventListener('blur', (e)=>{
+      const t = e.target;
+      if(!t.matches('.editable[contenteditable="true"]')) return;
+      const day = t.dataset.day, idx = Number(t.dataset.idx), field = t.dataset.field;
+      const val = t.textContent.trim() || '—';
+      if(week[day] && week[day][idx]){
+        week[day][idx][field] = val;
+        saveWeek();
+        updateNow();
+      }
+    }, true);
+
+    // Свайп для мобил
+    (function(){
+      const zone = document.getElementById('swipeZone');
+      let startX=0, startY=0, t0=0;
+      zone.addEventListener('touchstart', (e)=>{
+        const t = e.touches[0]; startX=t.clientX; startY=t.clientY; t0=Date.now();
+      }, {passive:true});
+      zone.addEventListener('touchend', (e)=>{
+        const t1 = Date.now(); const dt = t1 - t0;
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy) && dt<600){
+          if(dx<0) nextBtn.click(); else prevBtn.click();
+        }
+      });
+    })();
+
+    renderDay();
+
+    // ==== КАРТОЧКА «ЗАРАЗ» ====
+    const nowTypeEl = document.getElementById('nowType');
+    const nowSubjectEl = document.getElementById('nowSubject');
+    const nowTimeEl = document.getElementById('nowTime');
+    const nowRoomEl = document.getElementById('nowRoom');
+    const nowTeachEl = document.getElementById('nowTeacher');
+    const elapsedEl = document.getElementById('elapsed');
+    const leftEl = document.getElementById('left');
+    const barEl = document.getElementById('nowBar');
+    const nextInfoEl = document.getElementById('nextInfo');
+
+    function toMin(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
+    const ranges = times.map(r=>{ const [a,b]=r.split('–'); return {start:toMin(a), end:toMin(b), label:r}; });
+
+    function todayKey(){
+      const d = new Date().getDay(); // 0..6
+      if(d===1) return 'mon';
+      if(d===2) return 'tue';
+      if(d===3) return 'wed';
+      if(d===4) return 'thu';
+      if(d===5) return 'fri';
+      return 'mon'; // на вихідних показуємо понеділок
+    }
+
+    function updateNow(){
+      const now = new Date();
+      const mins = now.getHours()*60 + now.getMinutes();
+      const dayKey = todayKey();
+      const arr = week[dayKey] || [];
+
+      let current = -1;
+      for(let i=0;i<ranges.length;i++){
+        if(mins>=ranges[i].start && mins<ranges[i].end){ current = i; break; }
+      }
+
+      if(current>=0){
+        const it = arr[current] || {s:'—',r:'—',t:'—'};
+        const start = ranges[current].start, end = ranges[current].end;
+        const passed = mins - start;
+        const remain = end - mins;
+        const total = end - start;
+        const w = Math.max(0, Math.min(100, (passed/total)*100));
+        nowTypeEl.textContent = 'Урок';
+        nowSubjectEl.textContent = it.s || '—';
+        nowTimeEl.textContent = ranges[current].label;
+        nowRoomEl.textContent = `Кабінет: ${it.r||'—'}`;
+        nowTeachEl.textContent = `Викладач: ${it.t||'—'}`;
+        elapsedEl.textContent = `Йде: ${passed} хв`;
+        leftEl.textContent = `Залишилось: ${remain} хв`;
+        barEl.style.width = w + '%';
+
+        if(current < ranges.length-1){
+          const nIt = arr[current+1] || {s:'—'};
+          const diff = ranges[current+1].start - mins;
+          nextInfoEl.textContent = `Далі: ${ranges[current+1].label} — ${nIt.s||'—'} через ${diff} хв`;
+        }else{
+          nextInfoEl.textContent = 'Далі: заняття закінчилися';
+        }
+      }else{
+        // Перерва / до початку / після завершення
+        let nextIdx = -1, prevIdx = -1;
+        for(let i=0;i<ranges.length;i++){
+          if(mins < ranges[i].start){ nextIdx = i; break; }
+          if(mins >= ranges[i].end) prevIdx = i;
+        }
+        barEl.style.width = '0%';
+        nowRoomEl.textContent = 'Кабінет: —';
+        nowTeachEl.textContent = 'Викладач: —';
+
+        if(nextIdx===0){
+          const diff = ranges[0].start - mins;
+          nowTypeEl.textContent = 'Ще не почалося';
+          nowSubjectEl.textContent = arr[0]?.s || '—';
+          nowTimeEl.textContent = ranges[0].label;
+          elapsedEl.textContent = `Старт через: ${diff} хв`;
+          leftEl.textContent = '';
+          nextInfoEl.textContent = `Перший урок: ${ranges[0].label} — ${arr[0]?.s||'—'}`;
+        }else if(prevIdx>=0 && nextIdx>0){
+          const brkNo = prevIdx+1;
+          const remain = ranges[nextIdx].start - mins;
+          nowTypeEl.textContent = 'Перерва';
+          nowSubjectEl.textContent = `між ${brkNo} і ${brkNo+1}`;
+          nowTimeEl.textContent = `${String(Math.floor(ranges[prevIdx].end/60)).padStart(2,'0')}:${String(ranges[prevIdx].end%60).padStart(2,'0')}–${String(Math.floor(ranges[nextIdx].start/60)).padStart(2,'0')}:${String(ranges[nextIdx].start%60).padStart(2,'0')}`;
+          elapsedEl.textContent = `До уроку: ${remain} хв`;
+          leftEl.textContent = '';
+          nextInfoEl.textContent = `Далі: ${ranges[nextIdx].label} — ${arr[nextIdx]?.s||'—'}`;
+        }else{
+          nowTypeEl.textContent = 'Кінець дня';
+          nowSubjectEl.textContent = 'Заняття завершені';
+          nowTimeEl.textContent = '--:--';
+          elapsedEl.textContent = '';
+          leftEl.textContent = '';
+          nextInfoEl.textContent = `Початок завтра: ${ranges[0].label}`;
+        }
+      }
+    }
+    updateNow();
+    setInterval(updateNow, 15000); // обновление раз в 15 сек
+
+    // ==== ЗВЁЗДНОЕ НЕБО (ненавязчиво) ====
+    (function starfield(){
+      const canvas = document.getElementById('stars');
       const ctx = canvas.getContext('2d');
-      let w, h, dpr, points = [];
-      const MAX = 80;          // кол-во точек
-      const LINK_DIST = 130;   // дистанция связей
-      const SIDE_GAP = 0.30;   // центральная полоса (без частиц) шириной 40% (0.30 => по 30% по краям? нет: используем ниже)
-      const centerFrac = 0.44; // ширина центральной зоны без частиц (44% ширины)
-
-      function rnd(a,b){ return Math.random()*(b-a)+a; }
+      let w,h,dpr,stars=[],raf;
 
       function resize(){
-        dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        dpr = Math.max(1, Math.min(window.devicePixelRatio||1, 2));
         w = canvas.width = Math.floor(innerWidth * dpr);
         h = canvas.height = Math.floor(innerHeight * dpr);
         canvas.style.width = innerWidth + 'px';
         canvas.style.height = innerHeight + 'px';
-        initPoints();
+        init();
       }
 
-      function inSideZone(xPx){
-        const cw = w / dpr;
-        const leftMax  = (cw * (0.5 - centerFrac/2)) * dpr;
-        const rightMin = (cw * (0.5 + centerFrac/2)) * dpr;
-        return xPx <= leftMax || xPx >= rightMin;
-      }
-
-      function spawnPoint(){
-        // Точки только в боковых зонах
-        let x, y;
-        const cw = w / dpr, ch = h / dpr;
-        const leftMax  = (cw * (0.5 - centerFrac/2)) * dpr;
-        const rightMin = (cw * (0.5 + centerFrac/2)) * dpr;
-
-        if (Math.random() < 0.5) {
-          x = rnd(0, leftMax);
-        } else {
-          x = rnd(rightMin, w);
+      function init(){
+        stars = [];
+        const count = Math.min(220, Math.round((innerWidth*innerHeight)/18000));
+        for(let i=0;i<count;i++){
+          const x = Math.random()*w;
+          const y = Math.random()*h;
+          const r = (Math.random()*1.2 + 0.3) * dpr;
+          const tw = Math.random()*Math.PI*2;
+          const speed = 0.0008 + Math.random()*0.0016;
+          const hue = Math.random()<0.7 ? 270 : 200; // фиолет/циан
+          stars.push({x,y,r,tw,speed,hue});
         }
-        y = rnd(0, h);
-
-        const speed = rnd(0.05, 0.25) * dpr;
-        const ang = rnd(-Math.PI, Math.PI);
-        return {
-          x, y,
-          vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed,
-          r: rnd(0.8, 1.8)*dpr
-        };
+        draw(0);
       }
 
-      function initPoints(){
-        points = [];
-        const count = Math.min(MAX, Math.round((innerWidth * innerHeight)/23000));
-        for (let i=0;i<count;i++) points.push(spawnPoint());
-      }
-
-      function step(){
+      function draw(t){
         ctx.clearRect(0,0,w,h);
-
-        // линии
-        for(let i=0;i<points.length;i++){
-          for(let j=i+1;j<points.length;j++){
-            const dx = points[i].x - points[j].x;
-            const dy = points[i].y - points[j].y;
-            const dist = Math.hypot(dx,dy);
-            if(dist < LINK_DIST * dpr){
-              const a = 0.12 * (1 - dist/(LINK_DIST*dpr));
-              ctx.strokeStyle = `rgba(155,77,255,${a})`;
-              ctx.lineWidth = 1 * dpr;
-              ctx.beginPath();
-              ctx.moveTo(points[i].x, points[i].y);
-              ctx.lineTo(points[j].x, points[j].y);
-              ctx.stroke();
-            }
-          }
-        }
-
-        // точки
-        for(let p of points){
-          ctx.fillStyle = 'rgba(205,167,255,0.65)';
+        for(const s of stars){
+          const a = 0.55 + Math.sin(t*s.speed + s.tw)*0.35; // мерцание
+          ctx.fillStyle = `hsla(${s.hue},100%,85%,${a})`;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
           ctx.fill();
-
-          // движение
-          p.x += p.vx; p.y += p.vy;
-
-          // отскоки от краёв
-          if(p.y < 0 || p.y > h) p.vy *= -1;
-          if(p.x < 0 || p.x > w) p.vx *= -1;
-
-          // не пускаем в центр
-          const cw = w / dpr;
-          const leftMax  = (cw * (0.5 - centerFrac/2)) * dpr;
-          const rightMin = (cw * (0.5 + centerFrac/2)) * dpr;
-          if(p.x > leftMax && p.x < rightMin){
-            p.vx *= -1;
-            // чуть толкнуть обратно
-            p.x += p.vx * 6;
-          }
         }
-        raf = requestAnimationFrame(step);
+        raf = requestAnimationFrame(draw);
       }
 
-      let raf;
       const mediaReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
       function start(){
         cancelAnimationFrame(raf);
         resize();
-        if (mediaReduce.matches || innerWidth < 520) {
-          // статическая картинка для слабых/мобильных
-          // просто рисуем и не анимируем
-          step();
-        } else {
-          step();
+        if(mediaReduce.matches){ // без анимации — статичное небо
+          draw(0); cancelAnimationFrame(raf);
         }
       }
       window.addEventListener('resize', start);
