@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Google — поисковик</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#0b0b10;
+      --neon:#9b4dff;
+      --neon-2:#b56bff;
+      --text:#ece7ff;
+      --muted:#a79ac5;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 18% 24%, rgba(155,77,255,.13), transparent 60%),
+        radial-gradient(900px 500px at 80% 72%, rgba(155,77,255,.10), transparent 60%),
+        var(--bg);
+      display:grid; place-items:center; overflow:hidden;
+    }
+
+    /* Слои фона */
+    .glow{
+      position:fixed; width:65vmin; height:65vmin; border-radius:50%;
+      background:radial-gradient(circle, rgba(155,77,255,.6) 0%, rgba(155,77,255,.28) 40%, transparent 70%);
+      filter:blur(52px); z-index:0; animation:float 9s ease-in-out infinite alternate;
+      pointer-events:none;
+    }
+    .glow.g2{ width:48vmin; height:48vmin; opacity:.7; animation-duration:12s }
+    @keyframes float{ from{ transform:translate(-18vw,-10vh) } to{ transform:translate(16vw,12vh) } }
+
+    .noise{
+      position:fixed; inset:0; pointer-events:none; opacity:.06; mix-blend-mode:soft-light; z-index:1;
+      background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.5"/></svg>');
+    }
+
+    /* Неоновая сетка по бокам */
+    .bg-net{
+      position:fixed; inset:0; pointer-events:none; z-index:2;
+      mix-blend-mode:screen; opacity:.9;
+    }
+
+    .wrap{ position:relative; z-index:3; width:min(920px,94vw); text-align:center }
+    .title{
+      font-weight:800; font-size:clamp(28px,4vw,56px); margin:0 0 20px;
+      background:linear-gradient(90deg,#efe8ff,#caa9ff,#ffffff);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow:0 0 18px rgba(155,77,255,.45);
+    }
+    .subtitle{ margin:0 0 22px; color:var(--muted) }
+
+    /* Минималистичная строка с тонкой неоновой обводкой */
+    .bar{
+      width:min(880px,92vw);
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      align-items:center; gap:12px;
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid rgba(155,77,255,.55);
+      background:rgba(24,14,45,.06); /* почти прозрачная подложка */
+      -webkit-backdrop-filter:blur(8px) saturate(120%);
+      backdrop-filter:blur(8px) saturate(120%);
+      box-shadow:
+        0 0 0 2px rgba(155,77,255,.10) inset,
+        0 0 44px rgba(155,77,255,.35);
+      transition:border-color .2s ease, box-shadow .25s ease, transform .2s ease;
+    }
+    .bar:hover{
+      border-color:rgba(181,107,255,.85);
+      box-shadow:
+        0 0 0 2px rgba(181,107,255,.18) inset,
+        0 0 60px rgba(155,77,255,.55);
+    }
+    .bar:focus-within{
+      transform:translateY(-1px);
+      border-color:#c08bff;
+      box-shadow:
+        0 0 0 2px rgba(192,139,255,.22) inset,
+        0 0 68px rgba(155,77,255,.7);
+    }
+    .icon{
+      width:22px; height:22px; color:#d2b6ff;
+      filter:drop-shadow(0 0 6px rgba(155,77,255,.7));
+      margin-left:2px;
+    }
+    .q{
+      min-width:0; width:100%;
+      background:transparent; border:none; outline:none;
+      color:var(--text); font-size:clamp(16px,2.6vw,20px); padding:8px 6px;
+      caret-color:var(--neon);
+    }
+    .q::placeholder{ color:#b49be6; opacity:.6 }
+
+    .btn{
+      border:none; border-radius:999px; padding:12px 18px;
+      color:#fff; font-weight:600; letter-spacing:.2px; cursor:pointer;
+      background:linear-gradient(135deg,#8f4bff 0%,#b56bff 40%,#8f4bff 100%);
+      box-shadow:0 0 16px rgba(155,77,255,.55), 0 0 8px rgba(155,77,255,.5) inset;
+      transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .btn:hover{ transform:translateY(-1px) scale(1.02); box-shadow:0 0 26px rgba(155,77,255,.9); filter:saturate(1.08) }
+    .btn:active{ transform:translateY(0) scale(.98) }
+
+    /* Единственный контрол — открывать в новой вкладке */
+    .controls{
+      margin:14px auto 0;
+      display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; justify-content:center;
+      color:var(--muted); font-size:14px; user-select:none;
+    }
+    .switch{
+      display:inline-flex; gap:8px; align-items:center;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(155,77,255,.3); background:rgba(0,0,0,.22);
+    }
+    .switch input{
+      appearance:none; width:34px; height:20px; border-radius:20px; background:#2a2140; position:relative; outline:none; cursor:pointer;
+      box-shadow:inset 0 0 8px rgba(155,77,255,.35);
+    }
+    .switch input::after{
+      content:""; position:absolute; width:16px; height:16px; border-radius:50%; top:2px; left:2px; background:#cda7ff;
+      box-shadow:0 0 10px rgba(155,77,255,.8); transition:transform .2s ease;
+    }
+    .switch input:checked{ background:#8f4bff }
+    .switch input:checked::after{ transform:translateX(14px) }
+
+    footer{ margin-top:16px; font-size:12px; color:#8f84a8 }
+
+    @media (max-width:560px){
+      .btn{ width:auto }
+      .bar{ gap:10px; padding:10px 12px }
+      .q{ padding:10px 2px }
+      .controls{ gap:8px 10px }
+    }
+  </style>
+</head>
+<body>
+  <!-- Мягкие неоновые пятна -->
+  <div class="glow" style="top:15vh; left:15vw;"></div>
+  <div class="glow g2" style="bottom:10vh; right:18vw;"></div>
+  <div class="noise"></div>
+
+  <!-- Сетка/частицы по бокам -->
+  <canvas id="bgNet" class="bg-net"></canvas>
+
+  <main class="wrap">
+    <h1 class="title">Google</h1>
+    <p class="subtitle">style.</p>
+
+    <!-- Форма уходит прямо в Google -->
+    <form id="searchForm" class="bar" action="https://www.google.com/search" method="get" autocomplete="off">
+      <!-- язык результата -->
+      <input type="hidden" name="hl" value="ru" />
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <line x1="16.65" y1="16.65" x2="22" y2="22"></line>
+      </svg>
+      <input id="q" class="q" name="q" type="text" placeholder="Искать..." autofocus />
+      <button class="btn" type="submit">Найти</button>
+    </form>
+
+    <div class="controls">
+      <label class="switch" title="Открывать результаты в новой вкладке">
+        <input type="checkbox" id="newtab" checked />
+        Открывать в новой вкладке
+      </label>
+    </div>
+
+    <footer>Ctrl/Cmd + K — фокус на строку. Приятного поиска!</footer>
+  </main>
+
+  <script>
+    // Работа формы: стандартный GET в Google. Меняем только target.
+    const form  = document.getElementById('searchForm');
+    const input = document.getElementById('q');
+    const newTab = document.getElementById('newtab');
+
+    form.addEventListener('submit', (e) => {
+      if (!input.value.trim()) { // не отправляем пустой запрос
+        e.preventDefault();
+        input.focus();
+        return;
+      }
+      form.target = newTab.checked ? '_blank' : '_self';
+      // дальше браузер сам отправит форму на https://www.google.com/search?q=...
+    });
+
+    // Ctrl/Cmd + K — фокус на строку
+    window.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){
+        e.preventDefault(); input.focus();
+      }
+    });
+
+    // Неоновая сетка/частицы по бокам (мягкая, не отвлекает)
+    (function NeonNet(){
+      const canvas = document.getElementById('bgNet');
+      const ctx = canvas.getContext('2d');
+      let w, h, dpr, points = [];
+      const MAX = 80;          // кол-во точек
+      const LINK_DIST = 130;   // дистанция связей
+      const SIDE_GAP = 0.30;   // центральная полоса (без частиц) шириной 40% (0.30 => по 30% по краям? нет: используем ниже)
+      const centerFrac = 0.44; // ширина центральной зоны без частиц (44% ширины)
+
+      function rnd(a,b){ return Math.random()*(b-a)+a; }
+
+      function resize(){
+        dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        w = canvas.width = Math.floor(innerWidth * dpr);
+        h = canvas.height = Math.floor(innerHeight * dpr);
+        canvas.style.width = innerWidth + 'px';
+        canvas.style.height = innerHeight + 'px';
+        initPoints();
+      }
+
+      function inSideZone(xPx){
+        const cw = w / dpr;
+        const leftMax  = (cw * (0.5 - centerFrac/2)) * dpr;
+        const rightMin = (cw * (0.5 + centerFrac/2)) * dpr;
+        return xPx <= leftMax || xPx >= rightMin;
+      }
+
+      function spawnPoint(){
+        // Точки только в боковых зонах
+        let x, y;
+        const cw = w / dpr, ch = h / dpr;
+        const leftMax  = (cw * (0.5 - centerFrac/2)) * dpr;
+        const rightMin = (cw * (0.5 + centerFrac/2)) * dpr;
+
+        if (Math.random() < 0.5) {
+          x = rnd(0, leftMax);
+        } else {
+          x = rnd(rightMin, w);
+        }
+        y = rnd(0, h);
+
+        const speed = rnd(0.05, 0.25) * dpr;
+        const ang = rnd(-Math.PI, Math.PI);
+        return {
+          x, y,
+          vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed,
+          r: rnd(0.8, 1.8)*dpr
+        };
+      }
+
+      function initPoints(){
+        points = [];
+        const count = Math.min(MAX, Math.round((innerWidth * innerHeight)/23000));
+        for (let i=0;i<count;i++) points.push(spawnPoint());
+      }
+
+      function step(){
+        ctx.clearRect(0,0,w,h);
+
+        // линии
+        for(let i=0;i<points.length;i++){
+          for(let j=i+1;j<points.length;j++){
+            const dx = points[i].x - points[j].x;
+            const dy = points[i].y - points[j].y;
+            const dist = Math.hypot(dx,dy);
+            if(dist < LINK_DIST * dpr){
+              const a = 0.12 * (1 - dist/(LINK_DIST*dpr));
+              ctx.strokeStyle = `rgba(155,77,255,${a})`;
+              ctx.lineWidth = 1 * dpr;
+              ctx.beginPath();
+              ctx.moveTo(points[i].x, points[i].y);
+              ctx.lineTo(points[j].x, points[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // точки
+        for(let p of points){
+          ctx.fillStyle = 'rgba(205,167,255,0.65)';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+          ctx.fill();
+
+          // движение
+          p.x += p.vx; p.y += p.vy;
+
+          // отскоки от краёв
+          if(p.y < 0 || p.y > h) p.vy *= -1;
+          if(p.x < 0 || p.x > w) p.vx *= -1;
+
+          // не пускаем в центр
+          const cw = w / dpr;
+          const leftMax  = (cw * (0.5 - centerFrac/2)) * dpr;
+          const rightMin = (cw * (0.5 + centerFrac/2)) * dpr;
+          if(p.x > leftMax && p.x < rightMin){
+            p.vx *= -1;
+            // чуть толкнуть обратно
+            p.x += p.vx * 6;
+          }
+        }
+        raf = requestAnimationFrame(step);
+      }
+
+      let raf;
+      const mediaReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      function start(){
+        cancelAnimationFrame(raf);
+        resize();
+        if (mediaReduce.matches || innerWidth < 520) {
+          // статическая картинка для слабых/мобильных
+          // просто рисуем и не анимируем
+          step();
+        } else {
+          step();
+        }
+      }
+      window.addEventListener('resize', start);
+      mediaReduce.addEventListener?.('change', start);
+      start();
+    })();
+  </script>
+</body>
+</html>
